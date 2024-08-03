@@ -8,24 +8,49 @@ using namespace sf;
 // Ideia pra conseguir o resto da pontuação: Implementar um menu de upgrade acessível apertando ESC
 // Nesse menu você poderia talvez aumentar o seu hp máximo, hp máximo da base e botar pra base regenerar
 const float raiosprite = 16.f;
+const float raioprojetil = 10.f;
 //pra 1080p, 960x540
 const Vector2f centrotela = {800, 450};
+const Vector2f dimensoestela = {1600, 900};
 float calculaEscalar(Vector2f vetor) {
     return sqrt((vetor.x*vetor.x)+(vetor.y*vetor.y)); //nota para si: não esqueça da raiz quadrada do escalar
 }
-
-class Player {
-    int hp;
-    int dinheiro;
-    int muni;
+Vector2f calculaVersor(Vector2f vetor) { //Não sei se vale a pena essa
+    return vetor/calculaEscalar(vetor);
+}
+class Bola{ //classe criadas por motivos de herança pra não ter que repetir um monte de vezes esses
 public:
-    Window *janela;
     float movespeed;
     CircleShape sprite;
     Vector2f velocidade;
     Vector2f alvo;
     Vector2f versoralvo; //e foi no exato momento que percebi que eu ia precisar de versor pra fazer isso de uma forma bacana
     //que eu me senti genial por fazer VGA
+};
+class Projetil : public Bola {
+    float movespeed = 50;
+public:
+    Projetil(Vector2f target, Vector2f pos){
+        versoralvo = calculaVersor(target-pos);
+        velocidade = versoralvo*movespeed;
+        sprite.setPosition(pos);
+        sprite.setRadius(raioprojetil);
+        sprite.setFillColor(Color::Red);
+        sprite.setOrigin(raioprojetil, raioprojetil);
+    };
+    void update(){
+        sprite.move(velocidade);
+        if (sprite.getPosition().x < 0 || sprite.getPosition().x > dimensoestela.x || sprite.getPosition().y < 0 || sprite.getPosition().y > dimensoestela.y) {
+            delete this;
+        }
+    };
+};
+class Player : public Bola{
+    int hp;
+    int dinheiro;
+    int muni;
+public:
+    Window *janela;
     Player(float posX, float posY, Window *vindow){
         janela = vindow;
         hp = 100;
@@ -36,22 +61,21 @@ public:
         movespeed = 10;
         sprite.setPosition(posX, posY);
         sprite.setRadius(raiosprite);
-        sprite.setOutlineColor(Color::Cyan);
-        sprite.setOutlineThickness(4);
+        sprite.setOutlineColor(Color::Green);
+        sprite.setOutlineThickness(2);
         sprite.setFillColor(Color::White);
         sprite.setOrigin(raiosprite, raiosprite);
-        alvo = sprite.getPosition();
+        alvo = {0,0};
     }
     void update(){
         if(Mouse::isButtonPressed(sf::Mouse::Right)) {
             alvo = (Vector2f)Mouse::getPosition(*janela) - sprite.getPosition(); //casting pra V2f por motivos de o Mouse::getPosition retornar V2i
         }
-        if ((alvo.x != 0) && (alvo.y != 0)) {
+        if ((alvo.x != 0) || (alvo.y != 0)) {
             versoralvo = alvo / calculaEscalar(alvo);
             velocidade = versoralvo * movespeed;
-            if (calculaEscalar(alvo) < calculaEscalar(velocidade)) {
-                velocidade = alvo;
-            }
+            if (abs(velocidade.x) > abs(alvo.x)) { velocidade.x = alvo.x;}
+            if (abs(velocidade.y) > abs(alvo.y)) { velocidade.y = alvo.y;}
             alvo -= velocidade;
         }
         else { velocidade = {0,0};}
@@ -63,19 +87,22 @@ public:
     }
     void levardano(){
     }
-    float x() {return sprite.getPosition().x;};
-    float y() {return sprite.getPosition().y;};
-    float cima() {return y() - sprite.getPosition().y/2.f;};
-    float direita() {return x() + sprite.getPosition().x/2.f;};
-    float baixo() {return y() + sprite.getPosition().y/2.f;};
-    float esquerda() {return x() - sprite.getPosition().x/2.f;};
+    float x() { return sprite.getPosition().x; };
+    float y() { return sprite.getPosition().y; };
+    float cima() { return y() - sprite.getPosition().y / 2.f; };
+    float direita() { return x() + sprite.getPosition().x / 2.f; };
+    float baixo() { return y() + sprite.getPosition().y / 2.f; };
+    float esquerda() { return x() - sprite.getPosition().x / 2.f; };
 };
-class Inimigo{
-    CircleShape sprite;
+class Inimigo : public Bola{
+    Inimigo(){};
+    void update(){
+        sprite.move(velocidade);
+    }
     void morrer(){
-
     };
 };
+class Base{};
 
 
 
