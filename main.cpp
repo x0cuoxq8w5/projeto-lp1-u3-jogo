@@ -12,6 +12,9 @@ const float raiosprite = 16.f;
 const float raioprojetil = 10.f;
 const Vector2f centrotela = {800, 450}; //pra 1080p, 960x540 - Artur
 const Vector2f dimensoestela = {1600, 900};
+const string wintext = "Você venceu!"; //Fique atento: std::string != sf::string - Artur
+const string losetext = "Perdeu!";
+const Time maxgametime = seconds(180.f);
 float calculaEscalar(Vector2f vetor) {
     return sqrt((vetor.x*vetor.x)+(vetor.y*vetor.y)); //nota para si: não esqueça da raiz quadrada do escalar - Artur
 }
@@ -21,7 +24,7 @@ Vector2f calculaVersor(Vector2f vetor) { //Não sei se vale a pena esse - Artur
 }
 class Bola{ //classe criadas por motivos de herança pra não ter que repetir um monte de vezes esses - Artur
 public:
-    float movespeed;
+    float movespeed{};
     CircleShape sprite;
     Vector2f velocidade;
     Vector2f alvo;
@@ -34,6 +37,10 @@ public:
     int time; //será utilizado depois para propósitos de colisão; 0 = player, 1 = inimigo - Artur
     bool clrflag = false;
     Projetil(Vector2f target, Vector2f pos, int team){
+        if(target-pos == Vector2f{0,0}) {
+            target.x++;
+            target.y++;
+        }
         versoralvo = calculaVersor(target-pos);
         velocidade = versoralvo*movespeed;
         sprite.setPosition(pos);
@@ -49,20 +56,34 @@ public:
         }
     };
 };
+class Loot{
+public:
+    RectangleShape sprite{{40,30}};
+    int dinheiro, muni;
+    Clock despawntimer;
+    bool clrflag = false;
+    Loot(int cash, int ammo, Vector2f pos){
+        dinheiro = cash;
+        muni = ammo;
+        sprite.setOrigin(sprite.getSize().x/2, sprite.getSize().y/2);
+        sprite.setPosition(pos);
+        sprite.setFillColor(Color::Yellow);
+    };
+    void update(){};
+};
 class Shooter : public Bola{
 protected:
-    vector<Projetil>* projeteisaddr;
+    vector<Projetil>* projeteisaddr{};
+    vector<Loot>* lootaddr{};
 };
 class Player : public Shooter{
-    int hp, dinheiro, muni;
 public:
+    int hp = 100, dinheiro = 0, muni = 25;
     Window *janela;
-    Player(float posX, float posY, Window *vindow, vector<Projetil> *proj){
+    Player(float posX, float posY, Window *vindow, vector<Projetil> *proj, vector<Loot>* drops){
         janela = vindow;
         projeteisaddr = proj;
-        hp = 100;
-        muni = 100;
-        dinheiro = 0;
+        lootaddr = drops;
         velocidade = {0,0};
         versoralvo = {0,0};
         movespeed = 10;
@@ -84,7 +105,10 @@ public:
         sprite.move(velocidade);
     }
     void atirar(){
-        projeteisaddr->emplace_back((Vector2f)Mouse::getPosition(*janela), sprite.getPosition(), 0);
+        if (muni > 0) {
+            projeteisaddr->emplace_back((Vector2f) Mouse::getPosition(*janela), sprite.getPosition(), 0);
+            muni--;
+        }
         //aparentemente nas versões mais novas do C++ tem uma função pra vetor chamada emplace_back que faz o mesmo que push_back([vetor](argumentos))
         // - Artur
     }
@@ -103,7 +127,15 @@ public:
             if (i.time == 1) {
                 if (sprite.getGlobalBounds().intersects(i.sprite.getGlobalBounds())) {
                     i.clrflag = true;
+                    hp--;
                 }
+            }
+        }
+        for (Loot & i : *lootaddr) {
+            if (sprite.getGlobalBounds().intersects(i.sprite.getGlobalBounds())) {
+                i.clrflag = true;
+                muni += i.muni;
+                dinheiro += i.dinheiro;
             }
         }
     };
@@ -111,9 +143,9 @@ public:
     }
 };
 class Base{
-    int hp;
 public:
-    RectangleShape sprite;
+    int hp = 100;
+    RectangleShape sprite{{275,125}};
     void update(){
         if (hp == 0) {
             perdeu();
@@ -123,12 +155,9 @@ public:
         hp--;
     }
     Base(){
-        sprite.setFillColor(Color::Black);
-        sprite.setOutlineColor(Color::Blue);
-        sprite.setOutlineThickness(10);
-        sprite.setSize({250,100});
+        sprite.setFillColor(Color(127,127,192));
         sprite.setPosition(centrotela);
-        sprite.setOrigin({125,50});
+        sprite.setOrigin(sprite.getSize().x/2, sprite.getSize().y/2);
     }
     void perdeu() {
 
@@ -139,12 +168,16 @@ class Inimigo : public Shooter{
     Clock shoottimer;
     Player *playeraddr;
     Base *baseaddr;
+    int dinheiro, muni;
 public:
     bool clrflag = false;
-    Inimigo(float angulo, float delay, vector<Projetil> *proj, Player *jogador, Base *bas){
+    Inimigo(float angulo, float delay, vector<Projetil> *proj, Player *jogador, Base *bas, int money, int bullet, vector<Loot>* pickup){
         playeraddr = jogador;
         projeteisaddr = proj;
+        lootaddr = pickup;
         baseaddr = bas;
+        dinheiro = money;
+        muni = bullet;
         Vector2f temp = {escalarcentrotela*(float)cos(angulo*M_PI),escalarcentrotela*(float)sin(angulo*M_PI)};
         temp *= delay;
         temp += centrotela;
@@ -164,9 +197,10 @@ public:
             atirar();
             shoottimer.restart();
         }
-        for (Projetil projetil : *projeteisaddr) {
+        for (Projetil & projetil : *projeteisaddr) {
             if (projetil.time == 0) {
                 if (sprite.getGlobalBounds().intersects(projetil.sprite.getGlobalBounds())) {
+                    spawnarloot();
                     clrflag = true;
                     projetil.clrflag = true;
                 }
@@ -180,29 +214,69 @@ public:
     void atirar(){
         projeteisaddr->emplace_back(playeraddr->sprite.getPosition(), sprite.getPosition(), 1);
     }
+    void spawnarloot(){
+        lootaddr->emplace_back(dinheiro, muni, sprite.getPosition());
+    };
 };
-class Loot{
+class GameText{
+    Font fonte;
+    Player* player;
+    Base* base;
+    Clock *tempojogoatual;
 public:
-    RectangleShape sprite;
-    int hp, dinheiro, muni;
-    Clock despawntimer;
-    bool clrflag;
-    Loot(){};
-    void update(){};
+    Text hpplayer{"DEFAULT", fonte, 30}, hpbase{"DEFAULT", fonte, 30},
+    relogio{"DEFAULT", fonte, 30}, muni{"DEFAULT", fonte, 30},
+    dinheiro{"DEFAULT", fonte, 30};
+    GameText(Player *player1, Base* base1, Clock* relogiojogo){
+        fonte.loadFromFile("arial.ttf");
+        /*Isso não é um bom jeito de carregar a fonte pois requer que você
+        tenha na mesma pasta que o EXE o arquivo de fonte. Algum de vocês veja de achar uma solução melhor, isso é
+        gambiarrento e isso me deixa triste; - Artur*/
+        player = player1;
+        base = base1;
+        tempojogoatual = relogiojogo;
+        relogio.setPosition(0,0);
+        muni.setPosition(0, fonte.getLineSpacing(30));
+        hpplayer.setPosition(0, fonte.getLineSpacing(30)*2);
+        hpbase.setPosition(0, fonte.getLineSpacing(30)*3);
+        dinheiro.setPosition(0,fonte.getLineSpacing(30)*4);
+    }
+    void update(){
+        calculaRelogio();
+        muni.setString("Muni:" + to_string(player->muni));
+        hpplayer.setString("Vida:" + to_string(player->hp));
+        hpbase.setString("Base:" + to_string(base->hp));
+        dinheiro.setString("Dinheiro:" + to_string(player->dinheiro));
+    }
+    void calculaRelogio(){
+        int mins = ((int)maxgametime.asSeconds()-(int)tempojogoatual->getElapsedTime().asSeconds())/60;
+        int secs = ((int)maxgametime.asSeconds()-(int)tempojogoatual->getElapsedTime().asSeconds())%60;
+        string segs;
+        if (secs<10) {
+            segs = "0";
+            segs.append(to_string(secs));
+        }
+        else {
+            segs = to_string(secs);
+        }
+        string texto = to_string(mins) + ":" + segs;
+        relogio.setString(texto);
+    }
 };
 
-void updater(Player &player, vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base) {
+void updater(Player &player, vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base, GameText &textos) {
     player.update();
     for (Projetil & proj : projeteis) {
         proj.update();
     }
-    for (Inimigo & inimigo : inimigos) {
-        inimigo.update();
-    }
     for (Loot & loot : drops) {
         loot.update();
     }
+    for (Inimigo & inimigo : inimigos) {
+        inimigo.update();
+    }
     base.update();
+    textos.update();
 }
 void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<Loot> &drops){
     projeteis.erase(std::remove_if(projeteis.begin(), projeteis.end(), [&](const Projetil &item) {
@@ -216,16 +290,19 @@ void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<L
         return item.clrflag;
     }), drops.end());
 }
-void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player, Base* base) {
-    uniform_int_distribution<int> quantia(2,4);
-    uniform_real_distribution<float> onde(0.f,2.f);
-    uniform_real_distribution<float> slow(0.9f,1.6f);
-    int qtd = quantia(rand);
+void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player, Base* base, vector<Loot>* drops) {
+    uniform_int_distribution<int> quantia(2,4), grana(1,6), balas(0,10);
+    uniform_real_distribution<float> onde(0.f,2.f), slow(0.9f,1.3f);
+    //Note: "onde" é utilizado pra determinar o ângulo do inimigo em relação ao centro, e "slow" determina um """delay""" a mais
+    //a propósito de evitar que todos venham exatamente ao mesmo tempo
+    int qtd = quantia(rand), dinheiro, muni;
     double angulo, delay;
     for (int i = 0; i < qtd; ++i) {
+        dinheiro = grana(rand);
+        muni = balas(rand);
         angulo = onde(rand);
         delay = slow(rand);
-        inimigos.emplace_back(angulo, delay, addrprojeteis, player, base);
+        inimigos.emplace_back(angulo, delay, addrprojeteis, player, base, dinheiro, muni, drops);
     }
 }
 
@@ -237,12 +314,13 @@ int main() {
     vector<Projetil> projeteis;
     vector<Inimigo> inimigos;
     vector<Loot> drops;
-    Player player(centrotela.x, centrotela.y, &window, &projeteis);
+    Player player(centrotela.x, centrotela.y, &window, &projeteis, &drops);
     Base base;
     Clock timerinimigo, timerjogo;
     random_device isca;
     mt19937 randomizer(isca());
-
+    GameText textos(&player, &base, &timerjogo);
+    bool pauseflag = false;
     while (window.isOpen())
     {
         for (auto event = sf::Event{}; window.pollEvent(event);)
@@ -257,10 +335,10 @@ int main() {
                 }
             }
         }
-        updater(player, projeteis, inimigos, drops, base);
         limpaVetor(projeteis, inimigos, drops);
+        updater(player, projeteis, inimigos, drops, base, textos);
         if (timerinimigo.getElapsedTime().asMilliseconds() > 2500) {
-            spawnaInimigos(inimigos, randomizer, &projeteis, &player, &base);
+            spawnaInimigos(inimigos, randomizer, &projeteis, &player, &base, &drops);
             timerinimigo.restart();
         }
         window.clear();
@@ -275,7 +353,10 @@ int main() {
         for (Loot & loot : drops) {
             window.draw(loot.sprite);
         }
-        window.draw(base.sprite);
+        window.draw(textos.relogio);
+        window.draw(textos.muni);
+        window.draw(textos.hpplayer);
+        window.draw(textos.hpbase);
         window.display();
     }
 }
