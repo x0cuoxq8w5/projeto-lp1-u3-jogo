@@ -30,8 +30,8 @@ public:
 };
 class Projetil : public Bola {
     float movespeed = 10;
-    int time; //será utilizado depois para propósitos de colisão; 0 = player, 1 = inimigo - Artur
 public:
+    int time; //será utilizado depois para propósitos de colisão; 0 = player, 1 = inimigo - Artur
     bool clrflag = false;
     Projetil(Vector2f target, Vector2f pos, int team){
         versoralvo = calculaVersor(target-pos);
@@ -80,6 +80,7 @@ public:
             //casting pra V2f por motivos de o Mouse::getPosition retornar V2i - Artur
         }
         calculoMovimento();
+        calculoColisao();
         sprite.move(velocidade);
     }
     void atirar(){
@@ -97,24 +98,53 @@ public:
         }
         else { velocidade = {0,0};}
     }
+    void calculoColisao(){
+        for (Projetil & i : *projeteisaddr) {
+            if (i.time == 1) {
+                if (sprite.getGlobalBounds().intersects(i.sprite.getGlobalBounds())) {
+                    i.clrflag = true;
+                }
+            }
+        }
+    };
     void levardano(){
     }
-    float x() { return sprite.getPosition().x; };
-    float y() { return sprite.getPosition().y; };
-    float cima() { return y() - sprite.getPosition().y / 2.f; };
-    float direita() { return x() + sprite.getPosition().x / 2.f; };
-    float baixo() { return y() + sprite.getPosition().y / 2.f; };
-    float esquerda() { return x() - sprite.getPosition().x / 2.f; };
+};
+class Base{
+    int hp;
+public:
+    RectangleShape sprite;
+    void update(){
+        if (hp == 0) {
+            perdeu();
+        }
+    }
+    void levardano() {
+        hp--;
+    }
+    Base(){
+        sprite.setFillColor(Color::Black);
+        sprite.setOutlineColor(Color::Blue);
+        sprite.setOutlineThickness(10);
+        sprite.setSize({250,100});
+        sprite.setPosition(centrotela);
+        sprite.setOrigin({125,50});
+    }
+    void perdeu() {
+
+    };
 };
 class Inimigo : public Shooter{
     float movespeed = 5;
     Clock shoottimer;
-    Player *player;
+    Player *playeraddr;
+    Base *baseaddr;
 public:
     bool clrflag = false;
-    Inimigo(float angulo, float delay, vector<Projetil> *proj, Player *jogador){
-        player = jogador;
+    Inimigo(float angulo, float delay, vector<Projetil> *proj, Player *jogador, Base *bas){
+        playeraddr = jogador;
         projeteisaddr = proj;
+        baseaddr = bas;
         Vector2f temp = {escalarcentrotela*(float)cos(angulo*M_PI),escalarcentrotela*(float)sin(angulo*M_PI)};
         temp *= delay;
         temp += centrotela;
@@ -134,29 +164,21 @@ public:
             atirar();
             shoottimer.restart();
         }
+        for (Projetil projetil : *projeteisaddr) {
+            if (projetil.time == 0) {
+                if (sprite.getGlobalBounds().intersects(projetil.sprite.getGlobalBounds())) {
+                    clrflag = true;
+                    projetil.clrflag = true;
+                }
+            }
+            if (sprite.getGlobalBounds().intersects(baseaddr->sprite.getGlobalBounds())) {
+                clrflag = true;
+                baseaddr->levardano();
+            }
+        }
     }
     void atirar(){
-        projeteisaddr->emplace_back(player->sprite.getPosition(), sprite.getPosition(), 1);
-    }
-    void morrer(){
-    };
-};
-class Base{
-    int hp;
-private:
-    void levardano(){};
-public:
-    RectangleShape sprite;
-    void update(){
-        //colisão vai aqui - Artur
-    }
-    Base(){
-        sprite.setFillColor(Color::Black);
-        sprite.setOutlineColor(Color::Blue);
-        sprite.setOutlineThickness(10);
-        sprite.setSize({250,100});
-        sprite.setPosition(centrotela);
-        sprite.setOrigin({125,50});
+        projeteisaddr->emplace_back(playeraddr->sprite.getPosition(), sprite.getPosition(), 1);
     }
 };
 class Loot{
@@ -194,7 +216,7 @@ void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<L
         return item.clrflag;
     }), drops.end());
 }
-void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player) {
+void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player, Base* base) {
     uniform_int_distribution<int> quantia(2,4);
     uniform_real_distribution<float> onde(0.f,2.f);
     uniform_real_distribution<float> slow(0.9f,1.6f);
@@ -203,7 +225,7 @@ void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *
     for (int i = 0; i < qtd; ++i) {
         angulo = onde(rand);
         delay = slow(rand);
-        inimigos.emplace_back(angulo, delay, addrprojeteis, player);
+        inimigos.emplace_back(angulo, delay, addrprojeteis, player, base);
     }
 }
 
@@ -238,7 +260,7 @@ int main() {
         updater(player, projeteis, inimigos, drops, base);
         limpaVetor(projeteis, inimigos, drops);
         if (timerinimigo.getElapsedTime().asMilliseconds() > 2500) {
-            spawnaInimigos(inimigos, randomizer, &projeteis, &player);
+            spawnaInimigos(inimigos, randomizer, &projeteis, &player, &base);
             timerinimigo.restart();
         }
         window.clear();
