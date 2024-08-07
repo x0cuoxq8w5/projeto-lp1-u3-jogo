@@ -6,87 +6,114 @@
 #include <SFML/Window.hpp>
 using namespace std;
 using namespace sf;
+
 // Ideia pra conseguir o resto da pontuação: Implementar um menu de upgrade acessível apertando ESC
 // Nesse menu você poderia talvez aumentar o seu hp máximo, hp máximo da base e botar pra base regenerar - Artur
-const float raiosprite = 16.f;
-const float raioprojetil = 10.f;
-const Vector2f centrotela = {800, 450}; //pra 1080p, 960x540 - Artur
-const Vector2f dimensoestela = {1600, 900};
-const string wintext = "Você venceu!"; //Fique atento: std::string != sf::string - Artur
+
+const float raiosprite = 16.f; // Raio do sprite do jogador e inimigos
+const float raioprojetil = 10.f; // Raio do sprite do projetil
+const Vector2f centrotela = {800, 450}; // Coordenadas do centro da tela para resolução de 1600x900 - Artur
+const Vector2f dimensoestela = {1600, 900}; // Dimensões da tela
+const string wintext = "Você venceu!";
 const string losetext = "Perdeu!";
 const Time maxgametime = seconds(180.f);
+
+
+// Função para calcular a magnitude (escalar) de um vetor 2D
 float calculaEscalar(Vector2f vetor) {
     return sqrt((vetor.x*vetor.x)+(vetor.y*vetor.y)); //nota para si: não esqueça da raiz quadrada do escalar - Artur
 }
+
 const float escalarcentrotela = calculaEscalar(centrotela);
+
+// Função para calcular o versor (vetor unitário) de um vetor 2D
 Vector2f calculaVersor(Vector2f vetor) { //Não sei se vale a pena esse - Artur
     return vetor/calculaEscalar(vetor);
 }
-class Bola{ //classe criadas por motivos de herança pra não ter que repetir um monte de vezes esses - Artur
+
+// Classe base Bola, usada para herança em outras classes
+class Bola{
 public:
-    float movespeed{};
-    CircleShape sprite;
-    Vector2f velocidade;
-    Vector2f alvo;
-    Vector2f versoralvo; //e foi no exato momento que percebi que eu ia precisar de versor pra fazer isso de uma forma bacana
-    //que eu me senti genial por fazer VGA - Artur
+    float movespeed{}; // Velocidade de movimento
+    CircleShape sprite; // Sprite do objeto
+    Vector2f velocidade; // Vetor de velocidade
+    Vector2f alvo; // Posição alvo
+    Vector2f versoralvo; // Versor do vetor alvo
 };
+
+// Classe Projetil, derivada de Bola
 class Projetil : public Bola {
-    float movespeed = 10;
+    float movespeed = 10; // Velocidade do projetil
 public:
-    int time; //será utilizado depois para propósitos de colisão; 0 = player, 1 = inimigo - Artur
+    int time; // Será utilizado depois para propósitos de colisão; 0 = player, 1 = inimigo - Artur
     bool clrflag = false;
+
+    // Construtor do projetil
     Projetil(Vector2f target, Vector2f pos, int team){
         if(target-pos == Vector2f{0,0}) {
             target.x++;
             target.y++;
         }
-        versoralvo = calculaVersor(target-pos);
-        velocidade = versoralvo*movespeed;
-        sprite.setPosition(pos);
-        sprite.setRadius(raioprojetil);
-        sprite.setFillColor(Color::Yellow);
-        sprite.setOrigin(raioprojetil, raioprojetil);
-        time = team;
+        versoralvo = calculaVersor(target-pos); // Calcula o versor do alvo
+        velocidade = versoralvo*movespeed; // Define a velocidade baseada no versor e na velocidade
+        sprite.setPosition(pos); // Define a posição do sprite
+        sprite.setRadius(raioprojetil); // Define o raio do sprite
+        sprite.setFillColor(Color::Yellow); // Define a cor do sprite
+        sprite.setOrigin(raioprojetil, raioprojetil); // Define a origem do sprite
+        time = team; // Define o time do projetil
     };
+
+    // Função de atualização do projetil
     void update(){
-        sprite.move(velocidade);
+        sprite.move(velocidade); // Move o sprite baseado na velocidade
+        // Se o projetil sair da tela, ativa a flag de limpeza
         if (sprite.getPosition().x < 0 || sprite.getPosition().x > dimensoestela.x || sprite.getPosition().y < 0 || sprite.getPosition().y > dimensoestela.y) {
             clrflag = true;
         }
     };
 };
+
+// Classe Loot (itens dropados)
 class Loot{
 public:
-    RectangleShape sprite{{40,30}};
-    int dinheiro, muni;
-    Clock despawntimer;
+    RectangleShape sprite{{40,30}}; // Sprite do loot com tamanho 40x30
+    int dinheiro, muni; // Quantidade de dinheiro e munição no loot
+    Clock despawntimer; // Timer para o despawn do loot
     bool clrflag = false;
+
+    // Construtor do loot
     Loot(int cash, int ammo, Vector2f pos){
         dinheiro = cash;
         muni = ammo;
-        sprite.setOrigin(sprite.getSize().x/2, sprite.getSize().y/2);
-        sprite.setPosition(pos);
-        sprite.setFillColor(Color::Yellow);
+        sprite.setOrigin(sprite.getSize().x/2, sprite.getSize().y/2); // Define a origem do sprite
+        sprite.setPosition(pos); // Define a posição do sprite
+        sprite.setFillColor(Color::Yellow); // Define a cor do sprite
     };
-    void update(){};
+    void update(){}; // Função de atualização vazia (por enquanto)
 };
+
+// Classe Shooter, derivada de Bola
 class Shooter : public Bola{
 protected:
-    vector<Projetil>* projeteisaddr{};
-    vector<Loot>* lootaddr{};
+    vector<Projetil>* projeteisaddr{}; // Ponteiro para vetor de projeteis
+    vector<Loot>* lootaddr{}; // Ponteiro para vetor de loots
 };
+
+// Classe Player, derivada de Shooter
 class Player : public Shooter{
 public:
     int hp = 100, dinheiro = 0, muni = 25;
     Window *janela;
+
+    // Construtor do jogador
     Player(float posX, float posY, Window *vindow, vector<Projetil> *proj, vector<Loot>* drops){
-        janela = vindow;
-        projeteisaddr = proj;
-        lootaddr = drops;
+        janela = vindow; // Inicializa o ponteiro da janela
+        projeteisaddr = proj; // Inicializa o ponteiro dos projeteis
+        lootaddr = drops; // Inicializa o ponteiro dos loots
         velocidade = {0,0};
         versoralvo = {0,0};
         movespeed = 10;
+
         sprite.setPosition(posX, posY);
         sprite.setRadius(raiosprite);
         sprite.setOutlineColor(Color::Green);
@@ -95,7 +122,10 @@ public:
         sprite.setOrigin(raiosprite, raiosprite);
         alvo = {0,0};
     }
+
+    // Função de atualização do jogador
     void update(){
+	    // Se o botão direito do mouse for pressionado, define o alvo
         if(Mouse::isButtonPressed(sf::Mouse::Right)) {
             alvo = (Vector2f)Mouse::getPosition(*janela) - sprite.getPosition();
             //casting pra V2f por motivos de o Mouse::getPosition retornar V2i - Artur
@@ -104,6 +134,8 @@ public:
         calculoColisao();
         sprite.move(velocidade);
     }
+
+    // Função para o jogador atirar
     void atirar(){
         if (muni > 0) {
             projeteisaddr->emplace_back((Vector2f) Mouse::getPosition(*janela), sprite.getPosition(), 0);
@@ -112,17 +144,22 @@ public:
         //aparentemente nas versões mais novas do C++ tem uma função pra vetor chamada emplace_back que faz o mesmo que push_back([vetor](argumentos))
         // - Artur
     }
+
+    // Função para calcular o movimento do jogador
     void calculoMovimento(){//Joguei o código pra dentro duma função pra ficar mais fácil de ler - Artur
         if ((alvo.x != 0) || (alvo.y != 0)) {
             versoralvo = alvo / calculaEscalar(alvo);
             velocidade = versoralvo * movespeed;
-            if (abs(velocidade.x) > abs(alvo.x)) { velocidade.x = alvo.x;}
-            if (abs(velocidade.y) > abs(alvo.y)) { velocidade.y = alvo.y;}
-            alvo -= velocidade;
+            if (abs(velocidade.x) > abs(alvo.x)) { velocidade.x = alvo.x;} // Ajusta a velocidade no eixo x
+            if (abs(velocidade.y) > abs(alvo.y)) { velocidade.y = alvo.y;} // Ajusta a velocidade no eixo y
+            alvo -= velocidade; // Atualiza o alvo
         }
-        else { velocidade = {0,0};}
+        else { velocidade = {0,0};} // Se não há alvo, a velocidade é zero
     }
+
+    // Função para calcular a colisão do jogador
     void calculoColisao(){
+	// Verifica colisão com projeteis
         for (Projetil & i : *projeteisaddr) {
             if (i.time == 1) {
                 if (sprite.getGlobalBounds().intersects(i.sprite.getGlobalBounds())) {
@@ -131,6 +168,7 @@ public:
                 }
             }
         }
+	// Verifica colisão com loots
         for (Loot & i : *lootaddr) {
             if (sprite.getGlobalBounds().intersects(i.sprite.getGlobalBounds())) {
                 i.clrflag = true;
@@ -142,6 +180,8 @@ public:
     void levardano(){
     }
 };
+
+
 class Base{
 public:
     int hp = 100;
@@ -163,6 +203,8 @@ public:
 
     };
 };
+
+// Classe Inimigo, derivada de Shooter
 class Inimigo : public Shooter{
     float movespeed = 5;
     Clock shoottimer;
@@ -191,6 +233,7 @@ public:
         versoralvo = calculaVersor(alvo);
         velocidade = versoralvo*movespeed;
     };
+
     void update(){
         sprite.move(velocidade);
         if(shoottimer.getElapsedTime().asMilliseconds() > 1500) {
@@ -211,13 +254,17 @@ public:
             }
         }
     }
+
     void atirar(){
         projeteisaddr->emplace_back(playeraddr->sprite.getPosition(), sprite.getPosition(), 1);
     }
+
     void spawnarloot(){
         lootaddr->emplace_back(dinheiro, muni, sprite.getPosition());
     };
 };
+
+
 class GameText{
     Font fonte;
     Player* player;
@@ -241,6 +288,7 @@ public:
         hpbase.setPosition(0, fonte.getLineSpacing(30)*3);
         dinheiro.setPosition(0,fonte.getLineSpacing(30)*4);
     }
+
     void update(){
         calculaRelogio();
         muni.setString("Muni:" + to_string(player->muni));
@@ -248,6 +296,7 @@ public:
         hpbase.setString("Base:" + to_string(base->hp));
         dinheiro.setString("Dinheiro:" + to_string(player->dinheiro));
     }
+
     void calculaRelogio(){
         int mins = ((int)maxgametime.asSeconds()-(int)tempojogoatual->getElapsedTime().asSeconds())/60;
         int secs = ((int)maxgametime.asSeconds()-(int)tempojogoatual->getElapsedTime().asSeconds())%60;
@@ -278,6 +327,7 @@ void updater(Player &player, vector<Projetil> &projeteis, vector<Inimigo> &inimi
     base.update();
     textos.update();
 }
+
 void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<Loot> &drops){
     projeteis.erase(std::remove_if(projeteis.begin(), projeteis.end(), [&](const Projetil &item) {
         return item.clrflag;
@@ -290,6 +340,7 @@ void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<L
         return item.clrflag;
     }), drops.end());
 }
+
 void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player, Base* base, vector<Loot>* drops) {
     uniform_int_distribution<int> quantia(2,4), grana(1,6), balas(0,10);
     uniform_real_distribution<float> onde(0.f,2.f), slow(0.9f,1.3f);
