@@ -4,13 +4,24 @@ project(Projeto_LP1_Jogo LANGUAGES CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
+include_directories(include)
 include(FetchContent)
 FetchContent_Declare(SFML
         GIT_REPOSITORY https://github.com/SFML/SFML.git
         GIT_TAG 2.6.x)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(main main.cpp)
+add_executable(main src/Base.cpp
+        src/Bola.cpp
+        src/Funcoes.cpp
+        src/GameText.cpp
+        src/Globals.cpp
+        src/Inimigo.cpp
+        src/Loot.cpp
+        src/main.cpp
+        src/Player.cpp
+        src/Projetil.cpp
+        src/Shooter.cpp)
 target_link_libraries(main PRIVATE sfml-graphics)
 target_compile_features(main PRIVATE cxx_std_17)
 

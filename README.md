@@ -28,6 +28,12 @@ Ou execute o seguinte comando:
 g++ -I./include ./src/Globals.cpp ./src/Bola.cpp ./src/Projetil.cpp ./src/Loot.cpp ./src/Base.cpp ./src/Shooter.cpp ./src/Player.cpp ./src/Inimigo.cpp ./src/GameText.cpp ./src/Funcoes.cpp ./src/main.cpp -o jogo -lsfml-graphics -lsfml-window -lsfml-system
 ```
 
+Caso não tenha o SFML instalado (por estar no windows, ou caso os outros metodos não tenham funcionado), utilize o CMake com o comando
+```shell
+cmake --build .\cmake-build-release\ -t main
+```
+Isto criará um arquivo "main.exe" na pasta ./cmake-build-release/bin
+
 ## Executar o Jogo
 Após a compilação, você pode executar o jogo com o comando:
 
@@ -39,6 +45,12 @@ Se preferir, você pode usar a regra run do Makefile:
 ```bash
 make run
 ```
+Note que o jogo não terá elementos de UI caso a pasta do executável não possua um arquivo "arial.ttf" (como o já incluso na pasta bin do cmake-release), por não ter carregado a fonte.
+
+Controles:
+Movimento é realizado clicando com o botão direito do mouse na posição onde quer chegar
+Disparo de projéteis é realizado com a tecla Q
+Jogo pode ser pausado com ESC
 
 ## Limpar os Arquivos Compilados (Opcional)
 Se desejar remover o executável e outros arquivos gerados pela compilação, execute:

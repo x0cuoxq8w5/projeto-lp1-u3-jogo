@@ -27,7 +27,7 @@ int main() {
     vector<Inimigo> inimigos;
     vector<Loot> drops;
     bool pauseflag = false, loseflag = false;
-    Base base(&loseflag);
+    Base base(&loseflag, &projeteis);
     Player player(centrotela.x, centrotela.y, &window, &projeteis, &drops, &base, &loseflag);
     Clock timerinimigo, timerjogo;
     Time timeelapsed = seconds(0);
@@ -47,6 +47,9 @@ int main() {
             if (event.type == Event::KeyPressed) {
                 switch (event.key.code) {
                     case Keyboard::Escape: {
+                        if (timeelapsed > maxgametime || loseflag) {
+                            break;
+                        }
                         if (pauseflag) {
                             pauseflag = false;
                             timerjogo.restart();
@@ -98,14 +101,6 @@ int main() {
             textos.update();
         }
         window.clear();
-        if(loseflag){
-            window.draw(textos.perdeu);
-            pauseflag = true;
-        }
-        if(timeelapsed > maxgametime) {
-            window.draw(textos.ganhou);
-            pauseflag = true;
-        }
         window.draw(base.sprite);
         window.draw(player.sprite);
         for (Projetil & proj : projeteis) {
@@ -123,6 +118,14 @@ int main() {
         window.draw(textos.hpbase);
         window.draw(textos.dinheiro);
         window.draw(textos.upgrades);
+        if(loseflag){
+            window.draw(textos.perdeu);
+            pauseflag = true;
+        }
+        if(timeelapsed > maxgametime) {
+            window.draw(textos.ganhou);
+            pauseflag = true;
+        }
         window.display();
     }
 }

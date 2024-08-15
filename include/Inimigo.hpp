@@ -5,6 +5,7 @@
 
 #include "Shooter.hpp"
 #include "Player.hpp"
+#include <cmath>
 #include <random>
 
 using namespace std;
