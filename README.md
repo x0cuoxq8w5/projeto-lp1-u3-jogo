@@ -47,9 +47,9 @@ make run
 ```
 Note que o jogo não terá elementos de UI caso a pasta do executável não possua um arquivo "arial.ttf" (como o já incluso na pasta bin do cmake-release), por não ter carregado a fonte.
 
-Controles:
-Movimento é realizado clicando com o botão direito do mouse na posição onde quer chegar
-Disparo de projéteis é realizado com a tecla Q
+## Controles
+Movimento é realizado clicando com o botão direito do mouse na posição onde quer chegar \
+Disparo de projéteis é realizado com a tecla Q \
 Jogo pode ser pausado com ESC
 
 ## Limpar os Arquivos Compilados (Opcional)
