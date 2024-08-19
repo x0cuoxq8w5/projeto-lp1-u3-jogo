@@ -28,19 +28,6 @@ Ou execute o seguinte comando:
 g++ -I./include ./src/Globals.cpp ./src/Bola.cpp ./src/Projetil.cpp ./src/Loot.cpp ./src/Base.cpp ./src/Shooter.cpp ./src/Player.cpp ./src/Inimigo.cpp ./src/GameText.cpp ./src/Funcoes.cpp ./src/main.cpp -o jogo -lsfml-graphics -lsfml-window -lsfml-system
 ```
 
-Caso não tenha o SFML instalado (por estar no windows, ou caso os outros metodos não tenham funcionado), utilize o CMake com o comando
-```shell
-cmake -G "MinGW Makefiles" -B build -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=Release
-```
-Note: Dependendo de sua toolchain, você precisará especificar parâmetros diferentes para as flags -G, -D CMAKE_C_COMPILER, e -D CMAKE_CXX_COMPILER
-
-Isto criará uma pasta "./build/" que será utilizada para compilar o programa
-Em seguida, no mesmo diretório que você uitilizou o comando anterior, utilize o comando 
-```shell
-cmake --build build --target main
-```
-Para criar o arquivo "main.exe" na pasta ./build/bin
-
 ## Executar o Jogo
 Após a compilação, você pode executar o jogo com o comando:
 
