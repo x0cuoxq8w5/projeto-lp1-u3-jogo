@@ -15,7 +15,7 @@ git clone <URL do repositório>
 ```
 
 ## Compilar o Jogo
-Compile o jogo utilizando o Makefile fornecido. No terminal, execute o seguinte comando:
+Compile o jogo utilizando o Makefile fornecido. No terminal Linux, execute o seguinte comando:
 
 ```bash
 make
