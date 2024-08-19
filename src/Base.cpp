@@ -25,7 +25,7 @@ void Base::update() {
             hp += regen;
         }
     }
-    if (hp == 0) {
+    if (hp <= 0) {
         *loseflagaddr = true;
     }
     elapsed += regentimer.getElapsedTime();
