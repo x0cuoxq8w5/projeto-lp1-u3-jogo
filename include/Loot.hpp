@@ -14,7 +14,7 @@ public:
     RectangleShape sprite{{40,30}}; // Sprite do loot com tamanho 40x30
     int dinheiro, muni; // Quantidade de dinheiro e munição no loot
     Clock despawntimer; // Timer para o despawn do loot
-    Time elapsed;
+    Time elapsed = seconds(0);
     bool clrflag = false;
 
     // Construtor do loot

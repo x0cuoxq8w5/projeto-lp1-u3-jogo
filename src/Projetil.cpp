@@ -21,8 +21,18 @@ Projetil::Projetil(Vector2f target, Vector2f pos, int team, float tiro) : Projet
 }
 
 void Projetil::update() {
+    elapsed += despawntimer.getElapsedTime();
+    despawntimer.restart();
     sprite.move(velocidade);
-    if (sprite.getPosition().x < 0 || sprite.getPosition().x > dimensoestela.x || sprite.getPosition().y < 0 || sprite.getPosition().y > dimensoestela.y) {
+    if (sprite.getPosition().x < 0 || sprite.getPosition().x > dimensoestela.x || sprite.getPosition().y < 0
+    || sprite.getPosition().y > dimensoestela.y || elapsed.asSeconds() > 2) {
         clrflag = true;
     }
+}
+void Projetil::pausado() {
+    elapsed += despawntimer.getElapsedTime();
+}
+
+void Projetil::despausado() {
+    despawntimer.restart();
 }

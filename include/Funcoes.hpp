@@ -13,7 +13,7 @@ using namespace std;
 void updater(Player &player, vector<Projetil> &Projetil, vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base, GameText &textos);
 void limpaVetor(vector<Projetil> &projeteis, vector<Inimigo> &inimigos, vector<Loot> &drops);
 void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *addrprojeteis, Player* player, Base* base, vector<Loot>* drops);
-void pausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &Base);
-void despausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &Base);
+void pausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &Base, vector<Projetil> &projeteis);
+void despausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &Base, vector<Projetil> &projeteis);
 
 #endif

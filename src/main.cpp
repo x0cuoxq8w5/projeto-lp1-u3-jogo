@@ -53,12 +53,12 @@ int main() {
                         if (pauseflag) {
                             pauseflag = false;
                             timerjogo.restart();
-                            despausador(inimigos,drops,base);
+                            despausador(inimigos,drops,base, projeteis);
                         } else {
                             pauseflag = true;
                             timeelapsed += timerjogo.getElapsedTime();
                             timerjogo.restart();
-                            pausador(inimigos, drops, base);
+                            pausador(inimigos, drops, base, projeteis);
                         }
                         break;
                     }

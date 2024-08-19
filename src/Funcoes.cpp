@@ -41,21 +41,27 @@ void spawnaInimigos(vector<Inimigo> &inimigos, mt19937 &rand, vector<Projetil> *
     }
 }
 
-void pausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base){
+void pausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base, vector<Projetil> &projeteis){
     for (Inimigo & i : inimigos) {
         i.pausado();
     }
     for (Loot & i : drops) {
+        i.pausado();
+    }
+    for (Projetil & i : projeteis) {
         i.pausado();
     }
     base.pausado();
 }
 
-void despausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base){
+void despausador(vector<Inimigo> &inimigos, vector<Loot> &drops, Base &base, vector<Projetil> &projeteis){
     for (Inimigo & i : inimigos) {
         i.despausado();
     }
     for (Loot & i : drops) {
+        i.despausado();
+    }
+    for (Projetil & i : projeteis) {
         i.despausado();
     }
     base.despausado();
