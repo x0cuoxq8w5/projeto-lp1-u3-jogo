@@ -12,8 +12,8 @@ using namespace sf;
 
 class Base {
     Clock regentimer;
-    Time elapsed;
-    int hpmax = 1;
+    Time elapsed = seconds(0);
+    int hpmax = 100;
     bool* loseflagaddr;
     vector<Projetil>* projaddr;
 public:
