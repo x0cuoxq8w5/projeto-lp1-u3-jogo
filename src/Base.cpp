@@ -22,7 +22,7 @@ void Base::update() {
     if (hp < hpmax) {
         if (elapsed.asMilliseconds() > 1000) {
             elapsed = milliseconds(0);
-            hp += regen;
+            hp += min(regen, hpmax-hp);
         }
     }
     if (hp <= 0) {
