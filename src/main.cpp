@@ -30,7 +30,7 @@ int main() {
     Base base(&loseflag, &projeteis);
     Player player(centrotela.x, centrotela.y, &window, &projeteis, &drops, &base, &loseflag);
     Clock timerinimigo, timerjogo;
-    Time timeelapsed = seconds(0);
+    Time timeelapsed = seconds(0), tempoinimigo = milliseconds(0);
     random_device isca;
     mt19937 randomizer(isca());
     GameText textos(&player, &base, &timeelapsed);
@@ -53,11 +53,13 @@ int main() {
                         if (pauseflag) {
                             pauseflag = false;
                             timerjogo.restart();
+                            timerinimigo.restart();
                             despausador(inimigos,drops,base, projeteis);
                         } else {
                             pauseflag = true;
                             timeelapsed += timerjogo.getElapsedTime();
                             timerjogo.restart();
+                            timerinimigo.restart();
                             pausador(inimigos, drops, base, projeteis);
                         }
                         break;
@@ -88,14 +90,16 @@ int main() {
         limpaVetor(projeteis, inimigos, drops);
         if (!pauseflag) {
             updater(player, projeteis, inimigos, drops, base, textos);
-            if (timerinimigo.getElapsedTime().asMilliseconds() > 2500) {
+            if (tempoinimigo.asMilliseconds() > 2500) {
                 spawnaInimigos(inimigos, randomizer, &projeteis, &player, &base, &drops);
-                timerinimigo.restart();
+                tempoinimigo = milliseconds(0);
             }
             if(timerjogo.getElapsedTime().asSeconds() > 1) {
                 timeelapsed += timerjogo.getElapsedTime();
                 timerjogo.restart();
             }
+            tempoinimigo += timerinimigo.getElapsedTime();
+            timerinimigo.restart();
         }
         else {
             textos.update();
